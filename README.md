@@ -1,81 +1,60 @@
-# Sparse Image Reconstruction
+# Sparse-view CT reconstruction with a U-Net
 
-A computational imaging project for reconstructing images from sparse-view tomographic measurements using a U-Net.
+A small study on how much image quality a U-Net can recover when a CT scan is taken with fewer projection angles than usual.
 
-## Overview
+## Why
 
-This project simulates a sparse-view CT reconstruction problem and evaluates whether a convolutional neural network can improve the reconstruction obtained from a limited number of projection angles.
+Phase-contrast micro-CT can show the inside of a tissue biopsy in 3D without cutting it, at a resolution close to histology. The problem is scan time. It grows with the number of projection angles, and published scans of breast specimens have taken tens of hours at the exposure needed to see malignant structures. That is too slow for routine pathology work.
 
-The workflow is entirely computational and uses synthetic phantoms rather than experimental or patient data.
+Fewer angles means a shorter scan. But filtered back projection (FBP) then leaves streak artifacts across the image, and fine details can be lost. So the question is whether the streaks can be reduced after the fact, and that is what I test here on simulated data.
 
-## Method
+## Scope
 
-The project follows these main steps:
+Everything here is simulated. The setup is deliberately simple: 2D slices, parallel-beam geometry, absorption contrast only, and a 10-epoch training run. It is not a study on real or clinical data.
 
-1. Generate synthetic 2D phantoms with randomly placed elliptical structures and small high-intensity features.
-2. Simulate tomographic measurements using the Radon transform.
-3. Model photon-counting noise with a Poisson distribution.
-4. Reconstruct images using filtered back projection (FBP).
-5. Generate:
-   - a 180-view reconstruction used as the reference;
-   - a 30-view reconstruction representing the sparse-view input.
-6. Build a dataset of 600 simulated images.
-7. Split the dataset into 80% training, 10% validation, and 10% test sets.
-8. Train a U-Net to map sparse-view FBP reconstructions to the 180-view reference reconstructions.
-9. Evaluate the FBP and U-Net reconstructions using PSNR and SSIM.
+## What the notebook does
 
-## Model
-
-The reconstruction network is a compact U-Net implemented in PyTorch.
-
-The network contains:
-
-- an initial convolutional block;
-- two downsampling stages;
-- a bottleneck;
-- two upsampling stages with skip connections;
-- a final 1×1 convolution producing the reconstructed image.
-
-The model is trained with mean squared error (MSE) loss and the Adam optimizer.
+1. Makes synthetic phantoms with a soft-tissue body, elliptical structures and small bright dots.
+2. Simulates the scan with the Radon transform and Poisson photon-counting noise.
+3. Reconstructs with FBP at 180 angles for the reference and 30 angles for the sparse input.
+4. Builds 600 image pairs and splits them 80/10/10 into training, validation and test sets.
+5. Trains a compact U-Net with MSE loss and Adam for 10 epochs, keeping the checkpoint with the lowest validation loss.
+6. Scores FBP and the network against the same 180-angle reference with PSNR and SSIM.
 
 ## Results
 
-The final test-set results recorded in the notebook are:
+The recorded test-set results are:
 
-| Method | PSNR | SSIM |
+| Method | PSNR (dB) | SSIM |
 |---|---:|---:|
 | Sparse-view FBP | 27.09 | 0.555 |
 | U-Net | 34.35 | 0.850 |
 
-Under this simulated setup, the U-Net reconstruction has higher PSNR and SSIM than the sparse-view FBP reconstruction.
+These values are from the held-out test set of 60 simulated images.
 
-## Repository Contents
+## Files
 
-- `Untitled1.ipynb` — complete computational workflow, including simulation, dataset generation, U-Net training, evaluation, and visualization.
-- `requirements.txt` — Python packages required by the notebook.
+- `sparse_view_ct_unet.ipynb` — the workflow from phantom generation through testing.
+- `outputs/` — generated figures, dataset, model weights and results.
+- `requirements.txt` — required Python packages.
 
-## Running the Project
+## Running it
 
-The notebook can be opened in Google Colab or a local Jupyter environment.
+```bash
+pip install -r requirements.txt
+jupyter notebook sparse_view_ct_unet.ipynb
+```
 
-After installing the packages listed in `requirements.txt`, run the notebook from the beginning. The code generates the simulated dataset, trains the U-Net, evaluates the test set, and saves the trained model to `outputs/unet_model.pth`.
+It also runs in Google Colab. Run the notebook from top to bottom.
 
 ## Limitations
 
-This project is a proof-of-concept computational study. The current implementation uses synthetic phantoms and simulated attenuation-based tomographic measurements. It does not use experimental X-ray data, clinical data, or grating-interferometry phase-contrast measurements.
-
-The 180-view FBP reconstruction is used as the supervised reference. Therefore, the current experiment evaluates improvement relative to a higher-view reconstruction rather than recovery of the original phantom itself.
-
-A natural next step would be to investigate the approach with more realistic X-ray imaging data and, where appropriate, phase-contrast CT data.
-
-## Technologies
-
-- Python
-- NumPy
-- scikit-image
-- Matplotlib
-- PyTorch
+- The measurements are simulated and absorption-based, not experimental grating-interferometry phase-contrast data.
+- The training target is a 180-angle FBP reconstruction, not the phantom itself. The experiment therefore measures how well a longer scan can be reproduced, rather than direct recovery of the true object.
+- Reconstruction uses scikit-image and parallel-beam geometry. Laboratory micro-CT is typically cone-beam; a GPU toolkit such as ASTRA would be a natural next step.
+- Only single slices are used.
+- Real scans do not provide a clean reference in the same way, so a different training strategy would be needed for real data.
 
 ## Reproducibility
 
-The notebook uses fixed random seeds for the phantom generation and train/validation/test split. The complete workflow is contained in `Untitled1.ipynb`.
+The phantom/noise generator uses `default_rng(0)`, and the train/validation/test split uses `default_rng(42)`.
