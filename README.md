@@ -52,10 +52,19 @@ Under this simulated setup, the U-Net reconstruction has higher PSNR and SSIM th
 ## Repository Contents
 
 - `Untitled1.ipynb` — complete computational workflow, including simulation, dataset generation, U-Net training, evaluation, and visualization.
+- `requirements.txt` — Python packages required by the notebook.
+
+## Running the Project
+
+The notebook can be opened in Google Colab or a local Jupyter environment.
+
+After installing the packages listed in `requirements.txt`, run the notebook from the beginning. The code generates the simulated dataset, trains the U-Net, evaluates the test set, and saves the trained model to `outputs/unet_model.pth`.
 
 ## Limitations
 
 This project is a proof-of-concept computational study. The current implementation uses synthetic phantoms and simulated attenuation-based tomographic measurements. It does not use experimental X-ray data, clinical data, or grating-interferometry phase-contrast measurements.
+
+The 180-view FBP reconstruction is used as the supervised reference. Therefore, the current experiment evaluates improvement relative to a higher-view reconstruction rather than recovery of the original phantom itself.
 
 A natural next step would be to investigate the approach with more realistic X-ray imaging data and, where appropriate, phase-contrast CT data.
 
@@ -63,7 +72,7 @@ A natural next step would be to investigate the approach with more realistic X-r
 
 - Python
 - NumPy
-- SciPy / scikit-image
+- scikit-image
 - Matplotlib
 - PyTorch
 
